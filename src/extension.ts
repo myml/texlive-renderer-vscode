@@ -2,7 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
 import * as http from "http";
-import * as fs from "fs";
+import { createWriteStream } from "fs";
 import { URL } from "url";
 import { createHash } from "crypto";
 
@@ -28,7 +28,7 @@ export function activate(context: vscode.ExtensionContext) {
       const body = vscode.window.activeTextEditor.document.getText();
       const hash = createHash("md5").update(body).digest("hex");
       const path = vscode.Uri.joinPath(context.storageUri, hash);
-      const f = fs.createWriteStream(path.fsPath, { start: 0 });
+      const f = createWriteStream(path.fsPath, { start: 0 });
       const url = new URL(`${server}/pdf/${hash}.pdf`);
       url.searchParams.set("body", body);
       let success = true;
@@ -48,7 +48,9 @@ export function activate(context: vscode.ExtensionContext) {
         });
         const ext = success ? ".pdf" : ".txt";
         const resultPath = vscode.Uri.joinPath(context.storageUri, hash + ext);
-        await vscode.workspace.fs.delete(resultPath);
+        try {
+          await vscode.workspace.fs.delete(resultPath);
+        } catch {}
         await vscode.workspace.fs.rename(path, resultPath);
         vscode.commands.executeCommand(
           "vscode.open",

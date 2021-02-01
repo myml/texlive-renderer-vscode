@@ -1,9 +1,9 @@
 {
 	"name": "texlive-remote-render",
 	"publisher": "myml",
-	"displayName": "Texlive renderer",
-	"description": "",
-	"version": "0.0.1",
+	"displayName": "LuaTex renderer",
+	"description": "Use remote server render tex file",
+	"version": "0.0.2",
 	"engines": {
 		"vscode": "^1.52.0"
 	},
@@ -13,6 +13,10 @@
 	"activationEvents": [
 		"onCommand:texlive-remote-render.texlive_render"
 	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/myml/texlive-renderer-vscode.git"
+	},
 	"main": "./out/extension.js",
 	"contributes": {
 		"keybindings":[

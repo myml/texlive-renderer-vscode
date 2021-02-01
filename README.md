@@ -1,18 +1,15 @@
-# texlive-remote-render README
+# texlive-remote-render
 
-This is the README for your extension "texlive-remote-render". After writing up a brief description, we recommend including the following sections.
+Use remote server render luatex
 
-## Features
+## Render server
 
-Render tex file in docker
+Run a remote render server
 
-## Requirements
-
-Remote render server
 `docker run -ti -p 8080:8080 myml/texlive-render`
 
 ## Extension Settings
 
 This extension contributes the following settings:
 
-- `server`: Remote render server.
+- `server`: Remote render server.Default http://localhost:8080
