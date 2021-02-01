@@ -1,5 +1,6 @@
 {
 	"name": "texlive-remote-render",
+	"publisher": "myml",
 	"displayName": "Texlive renderer",
 	"description": "",
 	"version": "0.0.1",
