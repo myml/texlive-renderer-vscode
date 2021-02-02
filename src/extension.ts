@@ -1,7 +1,7 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
-import * as http from "http";
+import fetch from "node-fetch";
 import { createWriteStream } from "fs";
 import { URL } from "url";
 import { createHash } from "crypto";
@@ -25,28 +25,22 @@ export function activate(context: vscode.ExtensionContext) {
         return;
       }
       const server = vscode.workspace.getConfiguration().get("server");
-      const body = vscode.window.activeTextEditor.document.getText();
-      const hash = createHash("md5").update(body).digest("hex");
+      const document = vscode.window.activeTextEditor.document;
+      const body = document.getText();
+      const hash = createHash("md5").update(document.uri.fsPath).digest("hex");
       const path = vscode.Uri.joinPath(context.storageUri, hash);
       const f = createWriteStream(path.fsPath, { start: 0 });
       const url = new URL(`${server}/pdf/${hash}.pdf`);
-      url.searchParams.set("body", body);
-      let success = true;
       try {
         vscode.window.showInformationMessage("Rendering");
+        const resp = await fetch(url, { method: "POST", body: body });
+        console.log(resp.status, resp.statusText);
+        resp.body.pipe(f);
         await new Promise((resolve, reject) => {
-          const req = http.get(url, (resp) => {
-            if (resp.statusCode != 200) {
-              vscode.window.showErrorMessage("Render failure");
-              success = false;
-            }
-            resp.addListener("end", resolve);
-            resp.addListener("error", reject);
-            resp.pipe(f);
-          });
-          req.addListener("error", reject);
+          resp.body.addListener("end", resolve);
+          resp.body.addListener("error", reject);
         });
-        const ext = success ? ".pdf" : ".txt";
+        const ext = resp.status == 200 ? ".pdf" : ".txt";
         const resultPath = vscode.Uri.joinPath(context.storageUri, hash + ext);
         try {
           await vscode.workspace.fs.delete(resultPath);
@@ -58,6 +52,7 @@ export function activate(context: vscode.ExtensionContext) {
           vscode.ViewColumn.Two
         );
       } catch (err) {
+        console.log(err);
         vscode.window.showErrorMessage(String(err));
       } finally {
         f.close();

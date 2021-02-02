@@ -3,7 +3,7 @@
 	"publisher": "myml",
 	"displayName": "LuaTex renderer",
 	"description": "Use remote server render tex file",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"engines": {
 		"vscode": "^1.52.0"
 	},
@@ -19,11 +19,11 @@
 	},
 	"main": "./out/extension.js",
 	"contributes": {
-		"keybindings":[
+		"keybindings": [
 			{
 				"command": "texlive-remote-render.texlive_render",
 				"key": "alt+d",
-				"when":"resourceExtname==.tex"
+				"when": "resourceExtname==.tex"
 			}
 		],
 		"commands": [
@@ -32,10 +32,10 @@
 				"title": "luatatex preview"
 			}
 		],
-		"configuration":{
+		"configuration": {
 			"title": "Texlive renderer",
 			"properties": {
-				"server":{
+				"server": {
 					"type": "string",
 					"default": "http://localhost:8080",
 					"description": "render server"
@@ -65,7 +65,13 @@
 		"vscode-test": "^1.4.1"
 	},
 	"dependencies": {
-		"fetch": "^1.1.0"
+		"@types/node-fetch": "^2.5.8",
+		"@types/request": "^2.48.5",
+		"fetch": "^1.1.0",
+		"node-fetch": "^2.6.1",
+		"request": "^2.88.2"
 	},
-	"extensionDependencies":["tomoki1207.pdf"]
+	"extensionDependencies": [
+		"tomoki1207.pdf"
+	]
 }
