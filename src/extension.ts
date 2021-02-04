@@ -2,7 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
 import fetch from "node-fetch";
-import { createWriteStream } from "fs";
+import { createWriteStream, WriteStream } from "fs";
 import { URL } from "url";
 import { createHash } from "crypto";
 
@@ -29,7 +29,9 @@ export function activate(context: vscode.ExtensionContext) {
       const body = document.getText();
       const hash = createHash("md5").update(document.uri.fsPath).digest("hex");
       const path = vscode.Uri.joinPath(context.storageUri, hash);
-      const f = createWriteStream(path.fsPath, { start: 0 });
+      await vscode.workspace.fs.writeFile(path, new Uint8Array());
+      const f = createWriteStream(path.fsPath);
+      console.log("open file", path.fsPath);
       const url = new URL(`${server}/pdf/${hash}.pdf`);
       try {
         vscode.window.showInformationMessage("Rendering");
