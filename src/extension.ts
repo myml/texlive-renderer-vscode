@@ -2,9 +2,11 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
 import fetch from "node-fetch";
-import { createWriteStream, WriteStream } from "fs";
-import { URL } from "url";
+import { createWriteStream } from "fs";
 import { createHash } from "crypto";
+import * as FormData from "form-data";
+import * as fs from "fs";
+import * as path from "path";
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -26,39 +28,48 @@ export function activate(context: vscode.ExtensionContext) {
       }
       const server = vscode.workspace.getConfiguration().get("server");
       const document = vscode.window.activeTextEditor.document;
-      const body = document.getText();
-      const hash = createHash("md5").update(document.uri.fsPath).digest("hex");
-      const path = vscode.Uri.joinPath(context.storageUri, hash);
-      await vscode.workspace.fs.writeFile(path, new Uint8Array());
-      const f = createWriteStream(path.fsPath);
-      console.log("open file", path.fsPath);
-      const url = new URL(`${server}/pdf/${hash}.pdf`);
-      try {
-        vscode.window.showInformationMessage("Rendering");
-        const resp = await fetch(url, { method: "POST", body: body });
-        console.log(resp.status, resp.statusText);
-        resp.body.pipe(f);
-        await new Promise((resolve, reject) => {
-          resp.body.addListener("end", resolve);
-          resp.body.addListener("error", reject);
-        });
-        const ext = resp.status == 200 ? ".pdf" : ".txt";
-        const resultPath = vscode.Uri.joinPath(context.storageUri, hash + ext);
-        try {
-          await vscode.workspace.fs.delete(resultPath);
-        } catch {}
-        await vscode.workspace.fs.rename(path, resultPath);
-        vscode.commands.executeCommand(
-          "vscode.open",
-          resultPath,
-          vscode.ViewColumn.Two
+      const images = [
+        ...document.getText().matchAll(/includegraphics[.+]{(.+)}/g),
+      ].map((arr) => arr[1]);
+      const form = new FormData();
+      form.append("main", path.basename(document.fileName));
+      form.append(
+        path.basename(document.fileName),
+        fs.createReadStream(document.fileName)
+      );
+      for (const f of new Set(images)) {
+        console.log(f);
+        form.append(
+          f,
+          fs.createReadStream(path.join(path.dirname(document.fileName), f))
         );
-      } catch (err) {
-        console.log(err);
-        vscode.window.showErrorMessage(String(err));
-      } finally {
-        f.close();
       }
+      const hash = createHash("md5").update(document.fileName).digest("hex");
+      vscode.window.showInformationMessage("Rendering");
+      const resp = await fetch(`${server}/pdf/${hash}.pdf`, {
+        method: "POST",
+        body: form,
+      });
+      const tmp = vscode.Uri.joinPath(context.storageUri, hash);
+      await vscode.workspace.fs.writeFile(tmp, new Uint8Array());
+      const f = createWriteStream(tmp.fsPath);
+      resp.body.pipe(f);
+      await new Promise((resolve, reject) => {
+        resp.body.addListener("end", resolve);
+        resp.body.addListener("error", reject);
+      }).finally(() => f.close());
+      const ext = resp.status == 200 ? ".pdf" : ".log";
+      const resultPath = vscode.Uri.joinPath(context.storageUri, hash + ext);
+      try {
+        await vscode.workspace.fs.stat(resultPath);
+        await vscode.workspace.fs.delete(resultPath);
+      } catch {}
+      await vscode.workspace.fs.rename(tmp, resultPath);
+      vscode.commands.executeCommand(
+        "vscode.open",
+        resultPath,
+        vscode.ViewColumn.Two
+      );
       return;
     }
   );
